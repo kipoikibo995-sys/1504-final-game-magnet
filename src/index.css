@@ -1,0 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  
+  --color-wf-dark: #000000;
+  --color-wf-gold: #FFE600;
+  --color-wf-orange: #FF2E93;
+  --color-wf-cream: #F0F4F8;
+  --color-wf-white: #ffffff;
+  --color-wf-green: #00FF66;
+  --color-wf-red: #FF2A2A;
+  --color-wf-blue: #00E5FF;
+  --color-wf-purple: #B000FF;
+}
+
+@layer base {
+  body {
+    @apply bg-wf-cream text-wf-dark font-sans antialiased;
+    background-image: 
+      linear-gradient(rgba(0, 0, 0, 0.05) 2px, transparent 2px),
+      linear-gradient(90deg, rgba(0, 0, 0, 0.05) 2px, transparent 2px);
+    background-size: 40px 40px;
+  }
+}
+
+@layer components {
+  .brutalist-card {
+    @apply bg-wf-white border-4 border-wf-dark shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-xl transition-all;
+  }
+  
+  .brutalist-button {
+    @apply border-4 border-wf-dark shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-lg font-black uppercase transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none;
+  }
+
+  /* Custom Brutalist Scrollbar */
+  .brutalist-scrollbar::-webkit-scrollbar {
+    width: 12px;
+  }
+  .brutalist-scrollbar::-webkit-scrollbar-track {
+    background: var(--color-wf-cream);
+    border-left: 4px solid var(--color-wf-dark);
+  }
+  .brutalist-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--color-wf-dark);
+    border: 2px solid var(--color-wf-cream);
+  }
+  .brutalist-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--color-wf-orange);
+  }
+
+  .glow-hover:hover {
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+  }
+
+  .bento-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+  }
+
+  .bento-item-hero {
+    grid-column: span 3;
+    grid-row: span 2;
+  }
+
+  .bento-item-stats {
+    grid-column: span 1;
+    grid-row: span 2;
+  }
+}
+
+@media (max-width: 1280px) {
+  .bento-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .bento-item-hero {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 1024px) {
+  .bento-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .bento-item-hero, .bento-item-stats {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 640px) {
+  .bento-grid {
+    grid-template-columns: 1fr;
+  }
+  .bento-item-hero, .bento-item-stats {
+    grid-column: span 1;
+  }
+}
