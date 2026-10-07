@@ -1,24 +1,39 @@
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { GAMES } from '../data/games';
-import { GAME_CONTENT } from '../data/gameContent';
+import { hasGameContent, loadGameContent } from '../data/gameContent';
+import { isPackageUnlocked } from '../lib/access';
 import GameFrame from './GameFrame';
 import { ArrowLeft, Maximize2, RotateCcw, Download, Share2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { generateChallengeImage } from '../lib/challengeImage';
 
 export default function GameView() {
   const { id } = useParams<{ id: string }>();
   const game = GAMES.find(g => g.id === id);
-  const html = id ? GAME_CONTENT[id] : null;
-  
+  const canPlay = !!game && hasGameContent(game.id) && isPackageUnlocked(game.package);
+
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [html, setHtml] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [score, setScore] = useState<number>(0);
   const [isGameOver, setIsGameOver] = useState(false);
   const [challengeImage, setChallengeImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
+    if (!canPlay || !game) return;
+    let cancelled = false;
+    setHtml(null);
+    loadGameContent(game.id).then(content => {
+      if (!cancelled) setHtml(content);
+    });
+    return () => { cancelled = true; };
+  }, [canPlay, game]);
+
+  useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
+      if (event.source !== iframeRef.current?.contentWindow) return;
       if (event.data?.type === 'SCORE_UPDATE') {
         setScore(event.data.score);
       }
@@ -32,11 +47,13 @@ export default function GameView() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  if (!game || !html) {
+  // Locked packages can't be opened (or downloaded) by typing the URL directly.
+  if (!game || !canPlay) {
     return <Navigate to="/" replace />;
   }
 
   const handleDownload = () => {
+    if (!html) return;
     const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -52,14 +69,11 @@ export default function GameView() {
     setScore(0);
     setIsGameOver(false);
     setChallengeImage(null);
-    const iframe = document.querySelector('iframe');
-    if (iframe) {
-      iframe.srcdoc = html;
-    }
+    // Re-render through GameFrame so the score/print bridge script is injected again.
+    setReloadKey(k => k + 1);
   };
 
   const handleGenerateChallenge = async () => {
-    if (!game) return;
     setIsGenerating(true);
     try {
       const img = await generateChallengeImage(game.title, score);
@@ -112,6 +126,7 @@ export default function GameView() {
         <div className="flex-1 flex justify-end gap-2 min-w-0">
           <button 
             onClick={handleDownload}
+            disabled={!html}
             className="brutalist-button bg-wf-gold p-2 hover:bg-wf-orange shrink-0"
             title="Download HTML"
           >
@@ -128,8 +143,7 @@ export default function GameView() {
             className="brutalist-button bg-wf-white p-2 hidden sm:block shrink-0"
             title="Fullscreen"
             onClick={() => {
-              const el = document.querySelector('iframe');
-              if (el?.requestFullscreen) el.requestFullscreen();
+              iframeRef.current?.requestFullscreen?.();
             }}
           >
             <Maximize2 size={18} strokeWidth={3} />
@@ -143,7 +157,13 @@ export default function GameView() {
           animate={{ y: 0, opacity: 1 }}
           className="w-full flex-1 max-w-6xl mx-auto flex flex-col h-full print:max-w-none print:w-full print:h-auto print:block"
         >
-          <GameFrame html={html} />
+          {html ? (
+            <GameFrame html={html} iframeRef={iframeRef} reloadKey={reloadKey} />
+          ) : (
+            <div className="w-full flex-1 brutalist-card bg-wf-white flex items-center justify-center font-black uppercase">
+              Loading...
+            </div>
+          )}
         </motion.div>
 
         {/* Game Over Overlay / Challenge Button */}

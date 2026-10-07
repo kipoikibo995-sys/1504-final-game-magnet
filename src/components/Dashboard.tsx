@@ -1,10 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { GAMES, Game } from '../data/games';
-import { GAME_CONTENT } from '../data/gameContent';
-import * as Icons from 'lucide-react';
+import { loadGameContent } from '../data/gameContent';
+import {
+  ArrowRight, Binary, Bomb, Book, BookOpen, Calculator, Copy, Dog, Download, Equal, Gamepad2, Gift,
+  GraduationCap, Grid, Grid3X3, Image as ImageIcon, Key, Layout, Lock, Map as MapIcon, Megaphone, Move, Palette,
+  Rocket, Search, Settings, Shuffle, Skull, Star, Type, Waypoints, X,
+} from 'lucide-react';
+import { isPackageUnlocked, tryUnlock } from '../lib/access';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+
+// Only the icons we actually use, so the whole lucide set isn't bundled.
+// Game/ad icons are looked up by name, so every `icon` in games.ts and ADS must be listed here.
+const Icons = {
+  ArrowRight, Binary, Bomb, Book, BookOpen, Calculator, Copy, Dog, Download, Equal, Gamepad2, Gift,
+  GraduationCap, Grid, Grid3X3, Image: ImageIcon, Key, Layout, Lock, Map: MapIcon, Megaphone, Move, Palette,
+  Rocket, Search, Settings, Shuffle, Skull, Star, Type, Waypoints, X,
+};
 
 const ADS = [
   {
@@ -39,27 +52,26 @@ export default function Dashboard() {
   const featuredGame = GAMES.find(g => g.isFeatured) || feGames[0];
 
   // Unlock State
-  const [isUnlocked, setIsUnlocked] = useState(() => localStorage.getItem('game_magnet_unlocked') === 'true');
+  const [isUnlocked, setIsUnlocked] = useState(() => isPackageUnlocked('FE'));
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [accessCode, setAccessCode] = useState('');
   const [error, setError] = useState('');
 
   // OTO 1 Unlock State
-  const [isOto1Unlocked, setIsOto1Unlocked] = useState(() => localStorage.getItem('game_magnet_oto1_unlocked') === 'true');
+  const [isOto1Unlocked, setIsOto1Unlocked] = useState(() => isPackageUnlocked('OTO1'));
   const [showOto1UnlockModal, setShowOto1UnlockModal] = useState(false);
   const [oto1AccessCode, setOto1AccessCode] = useState('');
   const [oto1Error, setOto1Error] = useState('');
 
   // OTO 2 Unlock State
-  const [isOto2Unlocked, setIsOto2Unlocked] = useState(() => localStorage.getItem('game_magnet_oto2_unlocked') === 'true');
+  const [isOto2Unlocked, setIsOto2Unlocked] = useState(() => isPackageUnlocked('OTO2'));
   const [showOto2UnlockModal, setShowOto2UnlockModal] = useState(false);
   const [oto2AccessCode, setOto2AccessCode] = useState('');
   const [oto2Error, setOto2Error] = useState('');
 
   const handleUnlock = (e: React.FormEvent) => {
     e.preventDefault();
-    if (accessCode.trim().toUpperCase() === 'GAMEMAGNET') {
-      localStorage.setItem('game_magnet_unlocked', 'true');
+    if (tryUnlock('FE', accessCode)) {
       setIsUnlocked(true);
       setShowUnlockModal(false);
       setError('');
@@ -70,8 +82,7 @@ export default function Dashboard() {
 
   const handleOto1Unlock = (e: React.FormEvent) => {
     e.preventDefault();
-    if (oto1AccessCode.trim().toUpperCase() === 'GAMEMAGNETOTO1') {
-      localStorage.setItem('game_magnet_oto1_unlocked', 'true');
+    if (tryUnlock('OTO1', oto1AccessCode)) {
       setIsOto1Unlocked(true);
       setShowOto1UnlockModal(false);
       setOto1Error('');
@@ -82,8 +93,7 @@ export default function Dashboard() {
 
   const handleOto2Unlock = (e: React.FormEvent) => {
     e.preventDefault();
-    if (oto2AccessCode.trim().toUpperCase() === 'YOURSUCCESS') {
-      localStorage.setItem('game_magnet_oto2_unlocked', 'true');
+    if (tryUnlock('OTO2', oto2AccessCode)) {
       setIsOto2Unlocked(true);
       setShowOto2UnlockModal(false);
       setOto2Error('');
@@ -140,7 +150,7 @@ export default function Dashboard() {
     };
   }, []);
 
-  const handleDownload = (e: React.MouseEvent, gameId: string) => {
+  const handleDownload = async (e: React.MouseEvent, gameId: string) => {
     e.preventDefault();
     e.stopPropagation();
     const game = GAMES.find(g => g.id === gameId);
@@ -152,7 +162,7 @@ export default function Dashboard() {
       setShowOto1UnlockModal(true);
       return;
     }
-    const html = GAME_CONTENT[gameId];
+    const html = await loadGameContent(gameId);
     if (!html) return;
 
     const blob = new Blob([html], { type: 'text/html' });
@@ -166,8 +176,8 @@ export default function Dashboard() {
     URL.revokeObjectURL(url);
   };
 
-  const generateWhiteLabelHTML = (gameId: string) => {
-    let html = GAME_CONTENT[gameId];
+  const generateWhiteLabelHTML = async (gameId: string) => {
+    let html = await loadGameContent(gameId);
     if (!html) return null;
 
     const game = GAMES.find(g => g.id === gameId);
@@ -302,7 +312,7 @@ export default function Dashboard() {
     return html;
   };
 
-  const handleGenerateWhiteLabel = () => {
+  const handleGenerateWhiteLabel = async () => {
     const game = GAMES.find(g => g.id === wlGameId);
     if (game?.package === 'FE' && !isUnlocked) {
       setShowUnlockModal(true);
@@ -312,7 +322,7 @@ export default function Dashboard() {
       setShowOto1UnlockModal(true);
       return;
     }
-    const customizedHtml = generateWhiteLabelHTML(wlGameId);
+    const customizedHtml = await generateWhiteLabelHTML(wlGameId);
     if (!customizedHtml) return;
 
     const blob = new Blob([customizedHtml], { type: 'text/html' });
@@ -350,7 +360,7 @@ export default function Dashboard() {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-4 flex-1 w-full">
             <h2 className="text-3xl font-black uppercase bg-wf-gold px-6 py-2 border-4 border-wf-dark shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] whitespace-nowrap">
-              FE Package <span className="text-sm opacity-60 ml-2">(5 Games)</span>
+              FE Package <span className="text-sm opacity-60 ml-2">({feGames.length} Games)</span>
             </h2>
             <div className="h-1 flex-1 bg-wf-dark"></div>
           </div>
@@ -363,7 +373,7 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           {feGames.map((game, index) => {
-            const IconComponent = (Icons as any)[game.icon] || Icons.Gamepad2;
+            const IconComponent = Icons[game.icon as keyof typeof Icons] || Icons.Gamepad2;
             return (
               <motion.div
                 key={game.id}
@@ -448,7 +458,7 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           {oto1Games.map((game, index) => {
-            const IconComponent = (Icons as any)[game.icon] || Icons.Gamepad2;
+            const IconComponent = Icons[game.icon as keyof typeof Icons] || Icons.Gamepad2;
             return (
               <motion.div
                 key={game.id}
@@ -566,13 +576,13 @@ export default function Dashboard() {
                   onChange={(e) => setWlGameId(e.target.value)}
                   className="w-full p-3 border-4 border-wf-dark font-bold bg-wf-cream focus:bg-white transition-colors outline-none"
                 >
-                  <optgroup label="--- FE Package (5 Games) ---">
+                  <optgroup label={`--- FE Package (${feGames.length} Games) ---`}>
                     {feGames.map(g => (
                       <option key={g.id} value={g.id}>{g.title}</option>
                     ))}
                   </optgroup>
                   {isOto1Unlocked && (
-                    <optgroup label="--- OTO 1: KDP Package (10 Games) ---">
+                    <optgroup label={`--- OTO 1: KDP Package (${oto1Games.length} Games) ---`}>
                       {oto1Games.map(g => (
                         <option key={g.id} value={g.id}>{g.title}</option>
                       ))}
@@ -756,7 +766,7 @@ export default function Dashboard() {
                       className="text-3xl font-black uppercase mb-4"
                       style={{ color: wlThemeColor }}
                     >
-                      {wlAppName || feGames.find(g => g.id === wlGameId)?.title || 'Game Title'}
+                      {wlAppName || GAMES.find(g => g.id === wlGameId)?.title || 'Game Title'}
                     </h1>
                   )}
                   
@@ -883,7 +893,7 @@ export default function Dashboard() {
                   )}
                 >
                   <div className="w-12 h-12 bg-wf-white border-4 border-wf-dark rounded-full flex items-center justify-center shrink-0">
-                    {React.createElement((Icons as any)[ADS[currentAdIndex].icon] || Icons.Star, { size: 24, className: "text-wf-dark" })}
+                    {React.createElement(Icons[ADS[currentAdIndex].icon as keyof typeof Icons] || Icons.Star, { size: 24, className: "text-wf-dark" })}
                   </div>
                   <div>
                     <div className="text-[10px] font-black uppercase mb-1 opacity-80">Recommended Tool</div>

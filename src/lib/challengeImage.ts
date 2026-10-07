@@ -99,7 +99,7 @@ export async function generateChallengeImage(gameTitle: string, score: string | 
   ctx.font = '800 30px Poppins, sans-serif';
   ctx.fillStyle = colors.dark;
   ctx.textAlign = 'right';
-  ctx.fillText('BRUTALIST GAME HUB', 950, 980);
+  ctx.fillText('GAME MAGNET', 950, 980);
 
   return canvas.toDataURL('image/png');
 }

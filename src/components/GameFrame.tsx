@@ -1,21 +1,23 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, type RefObject } from 'react';
 
 interface GameFrameProps {
   html: string;
+  iframeRef: RefObject<HTMLIFrameElement | null>;
+  /** Change this value to reload the game from scratch. */
+  reloadKey?: number;
 }
 
-export default function GameFrame({ html }: GameFrameProps) {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-
+export default function GameFrame({ html, iframeRef, reloadKey = 0 }: GameFrameProps) {
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
+      if (event.source !== iframeRef.current?.contentWindow) return;
       if (event.data?.type === 'PRINT_REQUEST') {
         window.print();
       }
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [iframeRef]);
 
   useEffect(() => {
     if (iframeRef.current) {
@@ -96,7 +98,7 @@ export default function GameFrame({ html }: GameFrameProps) {
       const enhancedHtml = html.replace('</head>', compactStyle + '</head>');
       iframeRef.current.srcdoc = enhancedHtml;
     }
-  }, [html]);
+  }, [html, reloadKey, iframeRef]);
 
   return (
     <div className="w-full flex-1 brutalist-card overflow-hidden bg-wf-white relative flex flex-col print:border-none print:shadow-none print:rounded-none print:p-0 print:m-0 print:block print:h-auto print:overflow-visible">
@@ -104,6 +106,8 @@ export default function GameFrame({ html }: GameFrameProps) {
         ref={iframeRef}
         title="Game Content"
         className="w-full h-full border-none flex-1 print:block print:w-full print:h-screen"
+        // allow-same-origin is needed for in-game localStorage (e.g. Quick Math high score).
+        // Safe here because the iframe only ever renders the app's own bundled game HTML.
         sandbox="allow-scripts allow-same-origin allow-downloads allow-forms allow-modals allow-popups"
       />
     </div>

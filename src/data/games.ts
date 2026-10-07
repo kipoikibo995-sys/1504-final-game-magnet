@@ -63,7 +63,7 @@ export const GAMES: Game[] = [
     difficulty: 'Hard',
     package: 'FE'
   },
-  // OTO 1 PACKAGE (10 KDP Games)
+  // OTO 1 PACKAGE (14 KDP Games)
   {
     id: 'crossword',
     title: 'Crossword Puzzle',
@@ -162,6 +162,46 @@ export const GAMES: Game[] = [
     icon: 'Copy',
     color: 'bg-wf-green',
     difficulty: 'Easy',
+    package: 'OTO1'
+  },
+  {
+    id: 'futoshiki',
+    title: 'Futoshiki',
+    description: 'Fill the grid using greater-than and less-than clues.',
+    category: 'Puzzle',
+    icon: 'Equal',
+    color: 'bg-wf-blue',
+    difficulty: 'Hard',
+    package: 'OTO1'
+  },
+  {
+    id: 'hangman',
+    title: 'Hangman',
+    description: 'Guess the hidden word one letter at a time.',
+    category: 'Word',
+    icon: 'Type',
+    color: 'bg-wf-green',
+    difficulty: 'Easy',
+    package: 'OTO1'
+  },
+  {
+    id: 'hashi',
+    title: 'Hashi (Bridges)',
+    description: 'Connect the islands with bridges matching each number.',
+    category: 'Puzzle',
+    icon: 'Waypoints',
+    color: 'bg-wf-purple',
+    difficulty: 'Medium',
+    package: 'OTO1'
+  },
+  {
+    id: 'minesweeper',
+    title: 'Minesweeper Logic',
+    description: 'Use number clues to find every hidden mine.',
+    category: 'Puzzle',
+    icon: 'Bomb',
+    color: 'bg-wf-red',
+    difficulty: 'Medium',
     package: 'OTO1'
   }
 ];
